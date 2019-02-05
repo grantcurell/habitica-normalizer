@@ -12,6 +12,8 @@ configuration = {}
 @app.route('/')
 def index():
 
+    logging.info("Received request for index page.")
+
     players = {}
 
     for key, value in configuration['user_ids'].items():
@@ -24,13 +26,15 @@ def index():
 
         for habit in client.get_habits():
             points = points + habit['points']
-            time = time + time + habit['time']
+            time = time + habit['time']
             total_activities = total_activities + habit['total']
 
         for daily in client.get_dailies():
             points = points + daily['points']
-            time = time + time + daily['time']
+            time = time + daily['time']
             total_activities = total_activities + daily['total']
+
+        logging.debug("Calculated time to be: " + str(time))
 
         # Gets the total number of days
         days = divmod(time, 1440)
@@ -49,7 +53,6 @@ def index():
 def webhook():
 
     habitica_update = request.json  # type: dict
-    pprint(habitica_update)
 
     if habitica_update['direction'] != "down":
 
