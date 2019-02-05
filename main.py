@@ -1,13 +1,48 @@
 import logging
 import yaml
 from pprint import pprint
-from flask import Flask, request
+from flask import Flask, request, render_template
 from mongo import MongoDB
 
 
 app = Flask(__name__)
 
 configuration = {}
+
+@app.route('/')
+def index():
+
+    players = {}
+
+    for key, value in configuration['user_ids'].items():
+
+        client = MongoDB(configuration, key)
+
+        points = 0
+        time = 0
+        total_activities = 0
+
+        for habit in client.get_habits():
+            points = points + habit['points']
+            time = time + time + habit['time']
+            total_activities = total_activities + habit['total']
+
+        for daily in client.get_dailies():
+            points = points + daily['points']
+            time = time + time + daily['time']
+            total_activities = total_activities + daily['total']
+
+        # Gets the total number of days
+        days = divmod(time, 1440)
+        hours = divmod(days[1], 60)
+        minutes = hours[1]
+
+        players[key] = {"Username": value['username'], "Total Points": points, "Days": days[0], "Hours": hours[0], "Minutes": minutes, "Total Activities": total_activities}
+
+    pprint(players)
+
+    #for document in 
+    return render_template('index.html', players=players)
 
 
 @app.route('/taskevent', methods=['POST'])
@@ -33,6 +68,10 @@ def webhook():
 
 
 if __name__ == "__main__":
+
+    logging.basicConfig(filename='error.log',level=logging.DEBUG)
+
     with open('config.yml', 'r') as config:
         configuration = yaml.load(config)  # type: dict
+    
     app.run(host='0.0.0.0')

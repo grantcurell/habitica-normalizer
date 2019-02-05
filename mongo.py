@@ -39,6 +39,13 @@ class MongoDB:
         self.configuration = configuration
         self.client = MongoClient(self.mongo_ip, self.mongo_port)[database_name]  # type: mongo_client.MongoClient
 
+    def get_habits(self):
+        print(type(self.client['habits'].find()))
+        return self.client['habits'].find()
+
+    def get_dailies(self):
+        return self.client['dailies'].find()
+
     def update_habit(self, habitdaily: dict, is_habit: bool):
 
         habitdaily_id = habitdaily['id']
@@ -69,12 +76,12 @@ class MongoDB:
             # Update total time
             collection.update_one(document_query, {"$set": {"time": document['time'] + habitdaily_time}})
 
-            pprint(collection.find_one({"_id": habitdaily_id}))
+            #pprint(collection.find_one({"_id": habitdaily_id}))
 
         else:
 
             MongoDB.create_new_habit_or_daily(habitdaily_id, habitdaily_name, 1, habitdaily_difficulty, habitdaily_time, collection)
-            pprint(collection.find_one({"_id": habitdaily}))
+            #pprint(collection.find_one({"_id": habitdaily}))
 
 
 

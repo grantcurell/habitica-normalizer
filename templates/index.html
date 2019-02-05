@@ -1,0 +1,9 @@
+
+{% for player_id, player_attributes in players.items() %}
+{% for key, value in player_attributes.items() %}
+{{ key }}: {{ value }}
+<br>
+{% endfor %}
+<br>
+<br>
+{% endfor %}
