@@ -1,57 +1,80 @@
 
-from pymongo import MongoClient
-import logging
+from pymongo import MongoClient, database, mongo_client
+import datetime
+from pprint import pprint
 
 
 class MongoDB:
 
-    mongo_server_ip = None  # type: str
-    mongo_server_port = None  # type: int
+    mongo_ip = None  # type: str
+    mongo_port = None  # type: int
     client = None  # type: MongoClient
-    database_name = None  # type: str
     configuration = None  # type: dict
-    habits = None  # type: str
 
-    def __init__(self, mongo_server_ip: str, database_name: str, configuration: dict, mongo_server_port=27017):
-        self.mongo_server_ip = mongo_server_ip
-        self.mongo_server_port = mongo_server_port
-        self.client = MongoClient(self.mongo_server, self.mongo_port)  # type: pymongo.mongo_client.MongoClient
-        self.database_name = database_name
-        self.configuration = configuration
-        self.habits = configuration['habit_collection_name']
-
-    def get_document(self, collection, document_name: str):
-
-        document = self.client.collection.find({collection: {"$in": document_name}})
-        print("Document is type: " + type(document))
-
-        if document.count() > 0:
-            if document.count() > 1:
-                logging.warning(document_name + " matched more than one document, only returning the first!")
-            print("Document[0] is type: " + type(document[0]))
-            return document[0]
+    @staticmethod
+    def priority_to_difficulty(priority: int):
+        if priority == 2:
+            return "Hard", 100
+        elif priority == 1.5:
+            return "Medium", 75
+        elif priority == 1:
+            return "Easy", 50
+        elif priority == 0.1:
+            return "Trivial", 25
         else:
             return None
 
-    def create_new_habit(self, habit_id: str):
+    @staticmethod
+    def create_new_habit_or_daily(habit_id: str, name: str, total: int, difficulty: (str, int), time,
+                                  collection: database.Database):
 
-        collection = self.client[self.habits]
+        new_habit = {"_id": habit_id, "name": name, "total": total, "difficulty": difficulty[0],
+                     "points": difficulty[1], "time": time}
 
-        new_habit = { "_id": habit_id, "total": 1, "difficulty": }
+        return collection.insert_one(new_habit)
 
-        collection.insert_one()
+    def __init__(self, configuration: dict, database_name: str):
+        self.mongo_ip = configuration['mongo_server']
+        self.mongo_port = configuration['mongo_server_port']
+        self.configuration = configuration
+        self.client = MongoClient(self.mongo_ip, self.mongo_port)[database_name]  # type: mongo_client.MongoClient
 
-    def update_habit(self, habit_id):
+    def update_habit(self, habitdaily: dict, is_habit: bool):
 
-        collection = self.client[self.habits]
-        print("Collection is type: " + type(collection))
+        habitdaily_id = habitdaily['id']
+        habitdaily_name = habitdaily['text']
+        habitdaily_difficulty = MongoDB.priority_to_difficulty(habitdaily['priority'])
+        habitdaily_time = 20
 
-        document = self.get_document(collection, habit_id)
+        if is_habit:
+            collection = self.client['habits']  # type: database.Database
+        else:
+            collection = self.client['dailies']  # type: database.Database
+
+        document = collection.find_one({"_id": habitdaily_id})
+
+        if self.configuration['user_ids'][habitdaily['userId']]['username'] == "foozand" and \
+                datetime.datetime.today().weekday() < 5:
+            habitdaily_time = 30
 
         if document is not None:
-            print("YAY")
+            document_query = {"_id": document['_id']}
+
+            # Update total
+            collection.update_one(document_query, {"$set": {"total": document['total'] + 1}})
+
+            # Update total points
+            collection.update_one(document_query, {"$set": {"points": document['points'] + habitdaily_difficulty[1]}})
+
+            # Update total time
+            collection.update_one(document_query, {"$set": {"time": document['time'] + habitdaily_time}})
+
+            pprint(collection.find_one({"_id": habitdaily_id}))
+
         else:
-            print("NO")
+
+            MongoDB.create_new_habit_or_daily(habitdaily_id, habitdaily_name, 1, habitdaily_difficulty, habitdaily_time, collection)
+            pprint(collection.find_one({"_id": habitdaily}))
 
 
 
