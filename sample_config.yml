@@ -1,0 +1,11 @@
+---
+
+user_ids:
+  <YOUR_USER_ID_HERE>:
+    username: grant
+    api_key: "<YOUR_API_KEY_HERE>"
+
+mongo_server: "192.168.1.10"
+mongo_server_port: 27017
+log_file: "/var/log/flask/flask.log"
+...

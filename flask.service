@@ -1,0 +1,13 @@
+[Unit]
+Description=Habitica scoring system
+After=network.target
+
+[Service]
+User=grant
+Group=grant
+WorkingDirectory=/opt/env/source/
+ExecStart=/opt/env/bin/python3.6 /opt/env/source/main.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

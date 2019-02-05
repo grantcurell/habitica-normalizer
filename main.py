@@ -69,9 +69,9 @@ def webhook():
 
 if __name__ == "__main__":
 
-    logging.basicConfig(filename='error.log',level=logging.DEBUG)
-
     with open('config.yml', 'r') as config:
         configuration = yaml.load(config)  # type: dict
+
+    logging.basicConfig(filename=configuration['log_file'],level=logging.DEBUG)
     
     app.run(host='0.0.0.0')
