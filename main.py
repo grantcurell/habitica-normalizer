@@ -3,6 +3,7 @@ import yaml
 from pprint import pprint
 from flask import Flask, request, render_template
 from mongo import MongoDB
+from elasticsearch import Elasticsearch
 
 
 app = Flask(__name__)
@@ -22,9 +23,14 @@ def index():
 
         points = 0
         time = 0
+        work_time = 0
         total_activities = 0
 
         for habit in client.get_habits():
+            if habit['name'].lower() == 'work':
+                work_time = work_time + habit['time']
+                continue
+
             points = points + habit['points']
             time = time + habit['time']
             total_activities = total_activities + habit['total']
@@ -41,11 +47,13 @@ def index():
         hours = divmod(days[1], 60)
         minutes = hours[1]
 
-        players[key] = {"Username": value['username'], "Total Points": points, "Days": days[0], "Hours": hours[0], "Minutes": minutes, "Total Activities": total_activities}
+        work_days = divmod(work_time, 1440)
+        work_hours = divmod(work_days[1], 60)
 
-    pprint(players)
+        players[key] = {"Username": value['username'], "Total Points": points, "Days": days[0], "Hours": hours[0], "Minutes": minutes, "Work Days": work_days[0], "Work Hours": work_hours[0], "Total Activities": total_activities}
 
-    #for document in 
+    logging.debug(pprint(players))
+
     return render_template('index.html', players=players)
 
 
@@ -53,6 +61,8 @@ def index():
 def webhook():
 
     habitica_update = request.json  # type: dict
+
+    logging.info("Received update")
 
     if habitica_update['direction'] != "down":
 
@@ -66,6 +76,14 @@ def webhook():
             client.update_habit(habitica_update['task'], True)
         else:
             logging.error("Received an unrecognized task type.")
+
+        es = Elasticsearch([{'host': configuration['elasticsearch_server'], 'port': configuration['elasticsearch_port']}])
+
+        logging.info("Pushing event to Elasticsearch")
+
+        res = es.index(index="test-index", doc_type='_doc', body=habitica_update)
+        
+        logging.debug("Elasticsearch returned " + str(res['result']))
 
     return '', 200
 

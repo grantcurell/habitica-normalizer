@@ -1,7 +1,6 @@
 
-from pymongo import MongoClient, database, mongo_client
+from pymongo import MongoClient, database, mongo_client, cursor
 import datetime
-from pprint import pprint
 
 
 class MongoDB:
@@ -12,7 +11,7 @@ class MongoDB:
     configuration = None  # type: dict
 
     @staticmethod
-    def priority_to_difficulty(priority: int):
+    def priority_to_difficulty(priority: int) -> (str, int):
         if priority == 2:
             return "Hard", 100
         elif priority == 1.5:
@@ -39,11 +38,10 @@ class MongoDB:
         self.configuration = configuration
         self.client = MongoClient(self.mongo_ip, self.mongo_port)[database_name]  # type: mongo_client.MongoClient
 
-    def get_habits(self):
-        print(type(self.client['habits'].find()))
+    def get_habits(self) -> cursor.Cursor:
         return self.client['habits'].find()
 
-    def get_dailies(self):
+    def get_dailies(self) -> cursor.Cursor:
         return self.client['dailies'].find()
 
     def update_habit(self, habitdaily: dict, is_habit: bool):
@@ -64,6 +62,9 @@ class MongoDB:
                 datetime.datetime.today().weekday() < 5:
             habitdaily_time = 30
 
+        if habitdaily_name.lower() == 'work':
+            habitdaily_time = 60
+
         if document is not None:
             document_query = {"_id": document['_id']}
 
@@ -76,12 +77,9 @@ class MongoDB:
             # Update total time
             collection.update_one(document_query, {"$set": {"time": document['time'] + habitdaily_time}})
 
-            #pprint(collection.find_one({"_id": habitdaily_id}))
-
         else:
 
             MongoDB.create_new_habit_or_daily(habitdaily_id, habitdaily_name, 1, habitdaily_difficulty, habitdaily_time, collection)
-            #pprint(collection.find_one({"_id": habitdaily}))
 
 
 

@@ -10,3 +10,5 @@ sample_data*
 *.pyc
 
 \.vscode/ftp-sync\.json
+
+log\.txt
