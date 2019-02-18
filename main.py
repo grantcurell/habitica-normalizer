@@ -27,20 +27,24 @@ def index():
         total_activities = 0
 
         for habit in client.get_habits():
+
+            points = points + habit['points']
+            total_activities = total_activities + habit['total']
+
             if habit['name'].lower() == 'work':
                 work_time = work_time + habit['time']
                 continue
-
-            points = points + habit['points']
+            
             time = time + habit['time']
-            total_activities = total_activities + habit['total']
-
+            
         for daily in client.get_dailies():
             points = points + daily['points']
             time = time + daily['time']
             total_activities = total_activities + daily['total']
 
         logging.debug("Calculated time to be: " + str(time))
+
+        total_time = work_time + time
 
         # Gets the total number of days
         days = divmod(time, 1440)
@@ -50,7 +54,7 @@ def index():
         work_days = divmod(work_time, 1440)
         work_hours = divmod(work_days[1], 60)
 
-        players[key] = {"Username": value['username'], "Total Points": points, "Days": days[0], "Hours": hours[0], "Minutes": minutes, "Work Days": work_days[0], "Work Hours": work_hours[0], "Total Activities": total_activities}
+        players[key] = {"Username": value['username'], "Total Points": points, "Hobby Days": days[0], "Hobby Hours": hours[0], "Hobby Minutes": minutes, "Work Days": work_days[0], "Work Hours": work_hours[0], "Total Activities": total_activities}
 
     logging.debug(pprint(players))
 
